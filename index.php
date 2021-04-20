@@ -3,29 +3,42 @@ include 'inc/funciones/sesiones.php';
 include 'inc/funciones/funciones.php';
 include 'inc/templates/header.php';
 include 'inc/templates/barra.php';
+
+//obtener id de la url 
+$id_proyecto = '';
+if (isset($_GET['id_proyecto'])) {
+    $id_proyecto = $_GET['id_proyecto'];
+}
 ?>
-
-
-
 
 <div class="contenedor">
     <?php include 'inc/templates/sidebar.php'; ?>
 
     <main class="contenido-principal">
-        <h1>
-            <span>Diseño de Página Web</span>
-        </h1>
+        <?php
+        $proyecto = obtenerNombreProyecto($id_proyecto);
+        if ($proyecto) : ?>
+            <h1>Proyecto Actual:
+                <?php foreach ($proyecto as $nombre) : ?>
+                    <span><?php echo $nombre['nombre']; ?></span>
+                <?php endforeach; ?>
+            </h1>
 
-        <form action="#" class="agregar-tarea">
-            <div class="campo">
-                <label for="tarea">Nombre de la Tarea:</label>
-                <input type="text" placeholder="Nombre de la Tarea" class="nombre-tarea">
-            </div>
-            <div class="campo enviar">
-                <input type="hidden" id="id_proyecto" value="id_proyecto">
-                <input type="submit" class="boton nueva-tarea" value="Agregar Tarea">
-            </div>
-        </form>
+            <form action="#" class="agregar-tarea">
+                <div class="campo">
+                    <label for="tarea">Nombre de la Tarea:</label>
+                    <input type="text" placeholder="Nombre de la Tarea" class="nombre-tarea">
+                </div>
+                <div class="campo enviar">
+                    <input type="hidden" id="id_proyecto" value="<?php echo $id_proyecto; ?>">
+                    <input type="submit" class="boton nueva-tarea" value="Agregar Tarea">
+                </div>
+            </form>
+        <?php
+        else : //si no hay seleccionados
+            echo '<h1>Selecciona un proyecto</h1>';
+        endif;
+        ?>
 
 
 
