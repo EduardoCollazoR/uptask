@@ -8,6 +8,9 @@ function eventListener() {
 
   //boton nueva tarea
   document.querySelector('.nueva-tarea').addEventListener('click', agregarTarea);
+
+  //botones para las acciones de las tareas 
+  document.querySelector('.listado-pendientes').addEventListener('click', accionesTareas);
 }
 
 function nuevoProyecto(e) {
@@ -67,9 +70,10 @@ function guardarProyectoDB(nombreProyecto) {
           //inyectar html 
           var nuevoProyecto = document.createElement('LI');
           nuevoProyecto.innerHTML = `
-    <a href = "index.php?id_proyecto=${id_proyecto}" id="${id_proyecto}">
+    < a href = "index.php?id_proyecto=${id_proyecto}"
+    id ="proyecto:${id_proyecto}" >
     ${proyecto}
-    </a>
+    </>
     `;
           //agregar al html
           listaProyectos.appendChild(nuevoProyecto);
@@ -134,7 +138,7 @@ function agregarTarea(e) {
     //formdata
     var datos = new FormData();
     datos.append('tarea', nombreTarea);
-    datos.append('tipo', 'crear');
+    datos.append('accion', 'crear');
     datos.append('id_proyecto', document.querySelector('#id_proyecto').value);
 
     xhr.open('POST', 'inc/modelos/modelo-tareas.php');
@@ -143,11 +147,183 @@ function agregarTarea(e) {
       if (this.status === 200) {
         var respuesta = JSON.parse(xhr.responseText);
         console.log(respuesta);
+        //asignar variables 
+        var resultado = respuesta.respuesta,
+          tarea = respuesta.tarea,
+          id_insertado = respuesta.id_insert,
+          tipo = respuesta.tipo;
+
+        if (resultado === 'correcto') {
+          //se agrego
+
+          if (tipo === 'crear') {
+            //alerta
+            Swal.fire({
+              position: 'center',
+              icon: 'success',
+              title: 'Tarea creada',
+              text: 'La tarea : ' + tarea + ' se creo correctamente',
+              showConfirmButton: false,
+              timer: 1500
+
+            });
+
+
+            //selecciona el parrafo lista vacias
+            var parrafoListaVacia = document.querySelectorAll('.lista-vacia');
+
+            if (parrafoListaVacia.length > 0) {
+              document.querySelector('.lista-vacia').remove;
+            }
+            //contruir template
+
+            var nuevaTarea = document.createElement('LI');
+
+            //agregar id
+            nuevaTarea.id = 'tarea:' + id_insertado;
+
+            //agregar la clase tarea
+            nuevaTarea.classList.add('tarea');
+            //construir en el html 
+            nuevaTarea.innerHTML = `
+<p>${tarea}</p>
+<div class="acciones">
+<i class = "fas fa-check"></i></i>
+<i class = "fas fa-trash"></i>
+</div>
+            `;
+
+            //agregarlo al html
+
+            var listadoProyectos = document.querySelector('.listado-pendientes ul');
+            listadoProyectos.appendChild(nuevaTarea);
+
+            //limpiar el formulario
+            document.querySelector('.agregar-tarea').reset();
+
+          }
+        } else {
+          Swal.fire({
+            position: 'center',
+            icon: 'error',
+            title: 'Hubo un error!',
+            showConfirmButton: false,
+            timer: 1500
+          });
+
+        }
       }
     }
 
     xhr.send(datos);
 
+  }
+
+}
+
+
+//cambia el estado de las tareas o las elimina 
+function accionesTareas(e) {
+  e.preventDefault();
+  console.log(e.target)
+  if (e.target.classList.contains('fa-check')) {
+    if (e.target.classList.contains('completo')) {
+      e.target.classList.remove('completo');
+
+      cambiarEstadoTarea(e.target, 0);
+    } else {
+      e.target.classList.add('completo');
+      cambiarEstadoTarea(e.target, 1);
+    }
+
+  }
+
+  if (e.target.classList.contains('fa-trash')) {
+    Swal.fire({
+      title: 'Seguro?',
+      text: "Esta accion no se puede deshacer!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Si, borrar!',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+
+        var tareaEliminar = e.target.parentElement.parentElement;
+        //borrar de la bd
+        eliminarTareaBD(tareaEliminar);
+
+        //borrar del html
+        tareaEliminar.remove();
+        Swal.fire({
+          title: 'Eliminado!',
+          text: 'La tarea fue eliminada.',
+          icon: 'success',
+          showConfirmButton: false,
+          timer: 1500
+        })
+      }
+    })
+  }
+}
+
+//completa o descompleta una tarea 
+function cambiarEstadoTarea(tarea, estado) {
+  var idTarea = tarea.parentElement.parentElement.id.split(':');
+
+  //crear llamado ajax
+
+  var xhr = new XMLHttpRequest();
+
+  var datos = new FormData();
+  datos.append('id', idTarea[1]);
+  datos.append('accion', 'actualizar');
+  datos.append('estado', estado);
+
+
+
+
+  xhr.open('POST', 'inc/modelos/modelo-tareas.php', true);
+
+  xhr.onload = function() {
+    if (this.status == 200) {
+      console.log(JSON.parse(xhr.responseText));
+
+    }
+  }
+
+  xhr.send(datos);
+}
+
+//elimina las tareas de la bd 
+function eliminarTareaBD(tarea) {
+  var idTarea = tarea.id.split(':');
+
+  //crear llamado ajax
+
+  var xhr = new XMLHttpRequest();
+
+  var datos = new FormData();
+  datos.append('id', idTarea[1]);
+  datos.append('accion', 'eliminar');
+
+
+
+
+  xhr.open('POST', 'inc/modelos/modelo-tareas.php', true);
+
+  xhr.onload = function() {
+    if (this.status == 200) {
+      //comprobar que halla tareas restantes 
+      var listaTareasRestantes = document.querySelectorAll('li.tarea');
+
+      if (listaTareasRestantes.length === 0) {
+        document.querySelector('.listado-pendientes ul').innerHTML = "<p class='lista-vacia'>No hay tareas en este proyecto</p>";
+      }
+
+    }
   }
 
 }
