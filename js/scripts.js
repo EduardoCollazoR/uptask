@@ -3,6 +3,12 @@ eventListener();
 var listaProyectos = document.querySelector('ul#proyectos');
 
 function eventListener() {
+
+
+  //document ready
+  document.addEventListener('DOMContentLoaded', function() {
+    actualizarProgreso();
+  });
   //boton para crear proyecto 
   document.querySelector('.crear-proyecto a').addEventListener('click', nuevoProyecto);
 
@@ -200,7 +206,8 @@ function agregarTarea(e) {
 
             //limpiar el formulario
             document.querySelector('.agregar-tarea').reset();
-
+            //actualizar el progreso
+            actualizarProgreso();
           }
         } else {
           Swal.fire({
@@ -290,7 +297,8 @@ function cambiarEstadoTarea(tarea, estado) {
   xhr.onload = function() {
     if (this.status == 200) {
       console.log(JSON.parse(xhr.responseText));
-
+      //actualizar el progreso
+      actualizarProgreso();
     }
   }
 
@@ -323,7 +331,45 @@ function eliminarTareaBD(tarea) {
         document.querySelector('.listado-pendientes ul').innerHTML = "<p class='lista-vacia'>No hay tareas en este proyecto</p>";
       }
 
+      //actualizar el progreso
+      actualizarProgreso();
+
     }
   }
+
+}
+
+
+//actuliza el avance del proyecto 
+function actualizarProgreso() {
+
+
+  //obtener todas las tareas 
+  const tareas = document.querySelectorAll('li.tarea');
+
+  //obtener las tareas completadas la
+  const tareasCompletadas = document.querySelectorAll('i.completo');
+
+
+  //determinar el avance 
+  const avance = Math.round((tareasCompletadas.length / tareas.length) * 100);
+
+  //asignar avance ala barra 
+  const porcentaje = document.querySelector('#porcentaje');
+  porcentaje.style.width = avance + '%';
+
+  //mostrar una alerta  alcompletar al 100% 
+
+  if (avance === 100) {
+    Swal.fire({
+      position: 'center',
+      icon: 'success',
+      title: 'Proyecto Terminado',
+      text: 'Ya no tienes tareas pendientes!',
+      showConfirmButton: false,
+      timer: 1500
+    });
+  }
+
 
 }
